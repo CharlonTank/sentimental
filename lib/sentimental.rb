@@ -18,7 +18,7 @@ class Sentimental
   def score(string)
     return 0 if neutral_regexps.any? { |regexp| string =~ regexp }
 
-    initial_scoring = {score: 0, current_influencer: 1.0}
+    initial_scoring = { score: 0, current_influencer: 1.0 }
 
     extract_words_with_n_grams(string).inject(initial_scoring) do |current_scoring, word|
       process_word(current_scoring, word)
@@ -70,8 +70,6 @@ class Sentimental
 
   alias load_senti_file load_from
   alias load_senti_json load_from_json
-
-  alias_method :load_senti_file, :load_from
 
   private
 
