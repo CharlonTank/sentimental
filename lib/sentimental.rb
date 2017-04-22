@@ -42,7 +42,7 @@ class Sentimental
   end
 
   def load_defaults
-    %w(slang en_words).each do |filename|
+    %w(slang en_words fr_words).each do |filename|
       load_from_json(File.dirname(__FILE__) + "/../data/#{filename}.json")
     end
     load_influencers_from_json(File.dirname(__FILE__) + '/../data/influencers.json')

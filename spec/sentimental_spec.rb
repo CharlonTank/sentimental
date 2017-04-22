@@ -6,16 +6,18 @@ describe Sentimental do
 
   describe '#load_defaults' do
     it 'loads words and influencers' do
-      sentiwords = "#{root}/data/en_words.json"
+      senti_en_words = "#{root}/data/en_words.json"
+      senti_fr_words = "#{root}/data/fr_words.json"
       sentislang = "#{root}/data/slang.json"
       influencers = "#{root}/data/influencers.json"
-      words_count = JSON.load(File.open(sentiwords)).keys.count
+      en_words_count = JSON.load(File.open(senti_en_words)).keys.count
+      fr_words_count = JSON.load(File.open(senti_fr_words)).keys.count
       slang_count = JSON.load(File.open(sentislang)).keys.count
       influence_count = JSON.load(File.open(influencers)).keys.count
 
       loader.load_defaults
 
-      expect(loader.word_scores.count).to eq words_count + slang_count
+      expect(loader.word_scores.count).to eq en_words_count + fr_words_count + slang_count
       expect(loader.influencers.count).to eq influence_count
     end
   end
@@ -25,7 +27,6 @@ describe Sentimental do
       filename = "#{root}/data/slang.json"
       loader.load_from_json(filename)
       slang_count = JSON.load(File.open(filename)).keys.count
-      
       expect(loader.word_scores.count).to eq slang_count
       expect(loader.influencers.count).to eq 0
     end
@@ -56,8 +57,12 @@ describe Sentimental do
       expect(analyzer.sentiment('I hate javascript')).to be :negative
     end
 
-    it 'returns :positive when -threshold < score < threshold' do
-      expect(analyzer.sentiment('je en sais pas')).to be :neutral
+    it 'returns :neutral when -threshold < score < threshold' do
+      expect(analyzer.sentiment("I don't know")).to be :neutral
+    end
+
+    it 'returns :positive when the score > threshold (even in french ;-)' do
+      expect(analyzer.sentiment("J'adore le ruby <3")).to be :positive
     end
   end
 
@@ -90,16 +95,20 @@ describe Sentimental do
 
   describe 'neutral regexp' do
     context 'when there is some neutral regexp' do
-      let(:text_neutral) { 'Do you love ruby?' }
-      let(:text) { 'I love ruby' }
+      let(:en_text_neutral) { 'Do you love ruby?' }
+      let(:en_text) { 'I love ruby' }
+      let(:fr_text_neutral) { 'Êtes-vous amoureux de ruby?' }
+      let(:fr_text) { "J'adore ruby <3" }
 
       before do
         analyzer.neutral_regexps << /\?\s*$/
       end
 
       it 'scores it to 0' do
-        expect(analyzer.score(text_neutral)).to eq 0
-        expect(analyzer.score(text)).not_to eq 0
+        expect(analyzer.score(en_text_neutral)).to eq 0
+        expect(analyzer.score(en_text)).not_to eq 0
+        expect(analyzer.score(fr_text_neutral)).to eq 0
+        expect(analyzer.score(fr_text)).not_to eq 0
       end
     end
   end
@@ -138,7 +147,7 @@ describe Sentimental do
       analyzer.score(text)
     end
 
-    context 'when the text is postive' do
+    context 'when the text is positive' do
       let(:text) { 'I love ruby' }
 
       it 'returns a positive score' do
@@ -190,26 +199,55 @@ describe Sentimental do
     let(:negative_influence) { 'I really hate this' }
 
     it 'influences positively' do
-      expect(analyzer.score(positive_influence)).
-        to be > analyzer.score(positive)
+      expect(analyzer.score(positive_influence)).to be > analyzer.score(positive)
     end
 
     it 'influence positively for neutral' do
-      expect(analyzer.score(neutral_influence)).
-        to eq analyzer.score(neutral)
+      expect(analyzer.score(neutral_influence)).to eq analyzer.score(neutral)
     end
 
     it 'influences negatively' do
-      expect(analyzer.score(negative_influence)).
-        to be < analyzer.score(negative)
+      expect(analyzer.score(negative_influence)).to be < analyzer.score(negative)
     end
 
     it 'multiplies next word only and not the whole sentence' do
-      expect(analyzer.score("i really love ruby, but i hate and hate and hate and hate MRI implem")).to be > analyzer.score("i love ruby, but i hate and hate and hate and hate MRI implem")
+      expect(analyzer.score('i really love ruby, but i hate and hate and hate and hate MRI implem'))
+        .to be > analyzer.score('i love ruby, but i hate and hate and hate and hate MRI implem')
     end
 
     it 'it multiplies influencing words' do
-      expect(analyzer.score("I really really love ruby")).to be > analyzer.score("I really love ruby")
+      expect(analyzer.score('I really really love ruby'))
+        .to be > analyzer.score('I really love ruby')
+    end
+  end
+  describe 'influencers (in french ;-)' do
+    let(:positive) { 'Je suis admiratif des projets open-source :)' }
+    let(:positive_influence) { 'Je suis vraiment admiratif des projets open-source :)' }
+    let(:neutral) { "Ruby c'est cool" }
+    let(:neutral_influence) { "Ruby c'est vraiment cool" }
+    let(:negative) { "ruby c'est nul, c'est pas bien" }
+    let(:negative_influence) { "ruby c'est nul, c'est vraiment pas bien" }
+
+    it 'influences positively' do
+      expect(analyzer.score(positive_influence)).to be > analyzer.score(positive)
+    end
+
+    it 'influence positively for neutral' do
+      expect(analyzer.score(neutral_influence)).to eq analyzer.score(neutral)
+    end
+
+    it 'influences negatively' do
+      expect(analyzer.score(negative_influence)).to be < analyzer.score(negative)
+    end
+
+    pending 'multiplies next word only and not the whole sentence' do
+      expect(analyzer.score("J'adore le ruby <3, mais j'aime pas et j'aime pas les implémentations en MRI"))
+        .to be > analyzer.score("J'adore le ruby, mais j'aime pas et j'aime pas les implémentations en MRI")
+    end
+
+    it 'it multiplies influencing words' do
+      expect(analyzer.score('Je suis vraiment vraiment amoureux de ruby'))
+        .to be > analyzer.score('Je suis vraiment amoureux de ruby')
     end
   end
 end
