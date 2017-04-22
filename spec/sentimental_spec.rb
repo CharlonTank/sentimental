@@ -240,10 +240,9 @@ describe Sentimental do
       expect(analyzer.score(negative_influence)).to be < analyzer.score(negative)
     end
 
-    it 'multiplies next word only and not the whole sentence' do
-      # FIXME
-      # expect(analyzer.score("J'adore le ruby <3, mais j'aime pas et j'aime pas les implémentations en MRI"))
-      #   .to be > analyzer.score("J'adore le ruby, mais j'aime pas et j'aime pas les implémentations en MRI")
+    pending 'multiplies next word only and not the whole sentence' do
+      expect(analyzer.score("J'adore le ruby <3, mais j'aime pas et j'aime pas les implémentations en MRI"))
+        .to be > analyzer.score("J'adore le ruby, mais j'aime pas et j'aime pas les implémentations en MRI")
     end
 
     it 'it multiplies influencing words' do
